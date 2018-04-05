@@ -23,20 +23,15 @@ class MessageActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val templates = mutableListOf(
-                Pair(1, "**** ahead"),
-                Pair(2, "No **** ahead"),
-                Pair(3, "**** required ahead"),
-                Pair(40, "be wary of ****"),
-                Pair(5, "try ****"),
-                Pair(60, "Could this be a ****?"),
-                Pair(777, "****!"),
-                Pair(80, "Ahh, ****..."))
-        val mainAdapter = TemplatesRecyclerAdapter()
-        (fragment_message_recyclerview).apply {
-            layoutManager = LinearLayoutManager(activity)
-            adapter = mainAdapter
+        fragment_message_share.setOnClickListener {
+            makeMessage()
         }
+    }
 
+    fun makeMessage(){
+        val firebaseDatabase = FirebaseDatabase.getInstance()
+        val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")
+        val message = messagesDatabaseReference.push()
+        message.setValue(Write(fragment_message_message.text.toString(), messageUID = message.key))
     }
 }

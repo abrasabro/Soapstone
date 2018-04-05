@@ -14,7 +14,7 @@ class MessagesRecyclerAdapter: RecyclerView.Adapter<MessagesRecyclerAdapter.Mess
     }
 
     override fun getItemCount(): Int {
-        return soapstones.size
+        return writes.size
     }
 
     override fun onBindViewHolder(holder: MessagesViewHolder, position: Int) {
@@ -22,41 +22,44 @@ class MessagesRecyclerAdapter: RecyclerView.Adapter<MessagesRecyclerAdapter.Mess
     }
 
     companion object {
-        val soapstones = mutableListOf<Soapstone>()
-        val templates = mutableListOf(
-                Pair(1, "**** ahead"),
-                Pair(2, "No **** ahead"),
-                Pair(3, "**** required ahead"),
-                Pair(40, "be wary of ****"),
-                Pair(5, "try ****"),
-                Pair(60, "Could this be a ****?"),
-                Pair(777, "****!"),
-                Pair(80, "Ahh, ****..."))
+        val writes = mutableListOf<Write>()
     }
 
-    fun setSoapstones(stonesList: List<Soapstone>){
-        soapstones.addAll(stonesList)
+    fun setWrites(writesList: List<Write>){
+        writes.addAll(writesList)
+        notifyDataSetChanged()
     }
 
-    fun addSoapstone(soapstone: Soapstone){
-        soapstones.add(soapstone)
+    fun addWrite(write: Write){
+        writes.add(write)
+        notifyDataSetChanged()
     }
 
-    fun clearSoapstones(){
-        soapstones.removeAll { true }
+    fun clearWrites(){
+        writes.removeAll { true }
+        notifyDataSetChanged()
+    }
+
+    fun updateWrite(write: Write){
+        for(i in 0 until writes.size){
+            if(writes[i].messageUID == write.messageUID){
+                writes[i] = write
+            }
+        }
+        notifyDataSetChanged()
     }
 
     class MessagesViewHolder(var view: View) : RecyclerView.ViewHolder(view) {
         fun bind(index: Int){
-            val templateuid = soapstones[index].templateUID
-            var message = ""
-            templates.forEach {
-                if(it.first == templateuid){
-                    message = it.second
+            view.recycleritem_main_message.text = writes[index].message
+            view.recycleritem_main_toggle.setOnCheckedChangeListener { buttonView, isChecked ->
+                if(isChecked){
+                    MainActivityFragment.showWrite(writes[index])
+                }
+                else{
+                    MainActivityFragment.closeWrite()
                 }
             }
-            view.recycleritem_main_message.text = message
-            view.recycleritem_main_user.text = "user: ${soapstones[index].userUID}"
         }
     }
 }
