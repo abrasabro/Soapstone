@@ -11,17 +11,13 @@ import android.view.View
 import android.view.ViewGroup
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.bottomdrawer_main_nav.*
 import kotlinx.android.synthetic.main.bottomdrawer_main_write.*
 import kotlinx.android.synthetic.main.fragment_main.*
 
-/**
- * A placeholder fragment containing a simple view.
- */
+
 class MainActivityFragment : Fragment() {
 
     companion object {
@@ -39,8 +35,12 @@ class MainActivityFragment : Fragment() {
     val mainAdapter = MessagesRecyclerAdapter()
     val firebaseDatabase = FirebaseDatabase.getInstance()
     val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")
+    lateinit var usersDatabaseReference: DatabaseReference
+    lateinit var currentUser: User
+    lateinit var firebaseUser: FirebaseUser
+    var selectedWrite: Write? = null
 
-    val childEventListener: ChildEventListener = object : ChildEventListener{
+    val messagesEventListener: ChildEventListener = object : ChildEventListener{
         override fun onCancelled(p0: DatabaseError?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
@@ -51,8 +51,12 @@ class MainActivityFragment : Fragment() {
 
         override fun onChildChanged(p0: DataSnapshot?, p1: String?) {
             val write = p0?.getValue(Write::class.java)
-            if(write != null)
+            if(write != null) {
                 mainAdapter.updateWrite(write)
+                if (write.messageUID == selectedWrite?.messageUID){
+                    showWrite(write)
+                }
+            }
         }
 
         override fun onChildAdded(p0: DataSnapshot?, p1: String?) {
@@ -69,11 +73,35 @@ class MainActivityFragment : Fragment() {
 
     }
 
+    val usersEventListener: ValueEventListener = object : ValueEventListener{
+        override fun onCancelled(p0: DatabaseError?) {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun onDataChange(p0: DataSnapshot?) {
+            val user = p0?.getValue(User::class.java)
+            if(user != null) {
+                currentUser = user
+                if(selectedWrite != null) {
+                    if (currentUser.goodRatings.contains(selectedWrite!!.messageUID)) {
+                        bottomdrawer_main_write_rategood.isEnabled = false
+                    }
+                    if (currentUser.poorRatings.contains(selectedWrite!!.messageUID)) {
+                        bottomdrawer_main_write_ratepoor.isEnabled = false
+                    }
+                }
+            }else{
+                usersDatabaseReference!!.setValue(User(firebaseUser.uid))
+            }
+        }
+
+    }
+
     val authStateListener = object : FirebaseAuth.AuthStateListener{
         override fun onAuthStateChanged(p0: FirebaseAuth) {
             val user = p0.currentUser
             if(user != null){
-                onSignedInInitialize()
+                onSignedInInitialize(user)
             }else{
                 onSignedOutCleanup()
                 startActivityForResult(
@@ -126,7 +154,7 @@ class MainActivityFragment : Fragment() {
         super.onPause()
         firebaseAuth.removeAuthStateListener(authStateListener)
         mainAdapter.clearWrites()
-        messagesDatabaseReference.removeEventListener(childEventListener)
+        messagesDatabaseReference.removeEventListener(messagesEventListener)
     }
 
     override fun onResume() {
@@ -134,16 +162,20 @@ class MainActivityFragment : Fragment() {
         firebaseAuth.addAuthStateListener(authStateListener)
     }
 
-    fun onSignedInInitialize(){
-        messagesDatabaseReference.addChildEventListener(childEventListener)
+    fun onSignedInInitialize(user: FirebaseUser){
+        firebaseUser = user
+        messagesDatabaseReference.addChildEventListener(messagesEventListener)
+        usersDatabaseReference = firebaseDatabase.getReference().child("users").child(firebaseUser.uid)
+        usersDatabaseReference.addValueEventListener(usersEventListener)
     }
 
     fun onSignedOutCleanup(){
         mainAdapter.clearWrites()
-        messagesDatabaseReference.removeEventListener(childEventListener)
+        messagesDatabaseReference.removeEventListener(messagesEventListener)
     }
 
     fun showWrite(write: Write){
+        selectedWrite = write
         bottomdrawer_main_nav_layout.visibility = View.GONE
         bottomdrawer_main_write_message.text = write.message
         bottomdrawer_main_write_lonlat.text = "Lat:${write.lat}, Lon:${write.lon}"
@@ -151,15 +183,30 @@ class MainActivityFragment : Fragment() {
         bottomdrawer_main_write_good.text = write.ratingGood.toString()
         bottomdrawer_main_write_poor.text = write.ratingPoor.toString()
         bottomdrawer_main_write_layout.visibility = View.VISIBLE
-        bottomdrawer_main_write_rategood.setOnClickListener {
-            messagesDatabaseReference.child(write.messageUID).child("ratingGood").setValue(write.ratingGood+1)
+        if(currentUser.goodRatings.contains(write.messageUID)) {
+            bottomdrawer_main_write_rategood.isEnabled = false
+        }else{
+            bottomdrawer_main_write_rategood.isEnabled = true
+            bottomdrawer_main_write_rategood.setOnClickListener {
+                messagesDatabaseReference.child(write.messageUID).child("ratingGood").setValue(write.ratingGood + 1)
+                currentUser.goodRatings.add(write.messageUID)
+                usersDatabaseReference.setValue(currentUser)
+            }
         }
-        bottomdrawer_main_write_ratepoor.setOnClickListener {
-            messagesDatabaseReference.child(write.messageUID).child("ratingPoor").setValue(write.ratingPoor+1)
+        if(currentUser.poorRatings.contains(write.messageUID)) {
+            bottomdrawer_main_write_ratepoor.isEnabled = false
+        }else{
+            bottomdrawer_main_write_ratepoor.isEnabled = true
+            bottomdrawer_main_write_ratepoor.setOnClickListener {
+                messagesDatabaseReference.child(write.messageUID).child("ratingPoor").setValue(write.ratingPoor + 1)
+                currentUser.poorRatings.add(write.messageUID)
+                usersDatabaseReference.setValue(currentUser)
+            }
         }
     }
 
     fun closeWrite(){
+        selectedWrite = null
         bottomdrawer_main_write_layout.visibility = View.GONE
         bottomdrawer_main_nav_layout.visibility = View.VISIBLE
     }

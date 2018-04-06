@@ -1,19 +1,14 @@
 package com.domain.soapstone
 
-import android.content.Intent
 import android.support.v4.app.Fragment
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.firebase.database.FirebaseDatabase
-import kotlinx.android.synthetic.main.fragment_main.*
 import kotlinx.android.synthetic.main.fragment_message.*
 
-/**
- * A placeholder fragment containing a simple view.
- */
+
 class MessageActivityFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -23,15 +18,22 @@ class MessageActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragment_message_share.setOnClickListener {
+        fragment_message_write.setOnClickListener {
             makeMessage()
         }
     }
 
     fun makeMessage(){
+        val write = Write(fragment_message_message.text.toString())
+        fragment_message_message.text.clear()
+        fragment_message_write.isEnabled = false
+        fragment_message_write.text = "Writing.."
         val firebaseDatabase = FirebaseDatabase.getInstance()
         val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")
         val message = messagesDatabaseReference.push()
-        message.setValue(Write(fragment_message_message.text.toString(), messageUID = message.key))
+        write.messageUID = message.key
+        message.setValue(write)
+        fragment_message_write.text = "Written!"
+
     }
 }
