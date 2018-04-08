@@ -24,6 +24,10 @@
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDvj_wM3OCCFxV0oDNxsu1TqmEXRsAd8N4"/>
+
     </application>
 
 </manifest>

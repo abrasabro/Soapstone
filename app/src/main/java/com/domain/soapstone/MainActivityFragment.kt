@@ -10,6 +10,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.firebase.ui.auth.AuthUI
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.*
@@ -18,9 +23,10 @@ import kotlinx.android.synthetic.main.bottomdrawer_main_write.*
 import kotlinx.android.synthetic.main.fragment_main.*
 
 
-class MainActivityFragment : Fragment() {
+class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener {
 
     companion object {
+        var mMap: GoogleMap? = null
         const val RC_SIGN_IN = 1
         var instance = MainActivityFragment()
         fun showWrite(write: Write){
@@ -29,8 +35,17 @@ class MainActivityFragment : Fragment() {
         fun closeWrite(){
             instance.closeWrite()
         }
+        fun onMapReady(googleMap: GoogleMap) {
+            mMap = googleMap
+            mMap?.setOnMarkerClickListener(instance)
+            mMap?.setOnMapClickListener(instance)
+            val sydney = LatLng(-34.0, 151.0)
+            mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
+            mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        }
     }
     val writes = mutableListOf<Write>()
+    val writesHashMap = mutableMapOf<String, Write>()
     val firebaseAuth = FirebaseAuth.getInstance()
     val mainAdapter = MessagesRecyclerAdapter()
     val firebaseDatabase = FirebaseDatabase.getInstance()
@@ -64,6 +79,9 @@ class MainActivityFragment : Fragment() {
             if(write != null) {
                 writes.add(write)
                 mainAdapter.addWrite(write)
+                val marker = mMap?.addMarker(MarkerOptions().position(LatLng(write.lat, write.lon)).title(write.message))
+                writesHashMap[marker!!.id] = write
+                mMap?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(write.lat, write.lon)))
             }
         }
 
@@ -85,13 +103,14 @@ class MainActivityFragment : Fragment() {
                 if(selectedWrite != null) {
                     if (currentUser.goodRatings.contains(selectedWrite!!.messageUID)) {
                         bottomdrawer_main_write_rategood.isEnabled = false
+                        //todo: if app loses focus and another message is sent, returns null
                     }
                     if (currentUser.poorRatings.contains(selectedWrite!!.messageUID)) {
                         bottomdrawer_main_write_ratepoor.isEnabled = false
                     }
                 }
             }else{
-                usersDatabaseReference!!.setValue(User(firebaseUser.uid))
+                usersDatabaseReference.setValue(User(firebaseUser.uid))
             }
         }
 
@@ -160,6 +179,7 @@ class MainActivityFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         firebaseAuth.addAuthStateListener(authStateListener)
+        closeWrite()
     }
 
     fun onSignedInInitialize(user: FirebaseUser){
@@ -209,5 +229,20 @@ class MainActivityFragment : Fragment() {
         selectedWrite = null
         bottomdrawer_main_write_layout.visibility = View.GONE
         bottomdrawer_main_nav_layout.visibility = View.VISIBLE
+    }
+
+    override fun onMarkerClick(marker: Marker?): Boolean {
+        if(marker != null) {
+            val write = writesHashMap[marker.id]
+            if(write != null){
+                showWrite(write)
+                return true
+            }
+        }
+        return false
+    }
+
+    override fun onMapClick(p0: LatLng?) {
+        closeWrite()
     }
 }
