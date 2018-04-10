@@ -29,4 +29,15 @@
         android:text="Write"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/fragment_message_address"
+        android:layout_width="0dp"
+        android:layout_height="21dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="8dp"
+        android:text="TextView"
+        app:layout_constraintBottom_toTopOf="@+id/fragment_message_message"
+        app:layout_constraintEnd_toEndOf="@+id/fragment_message_message"
+        app:layout_constraintStart_toStartOf="@+id/fragment_message_message" />
 </android.support.constraint.ConstraintLayout>

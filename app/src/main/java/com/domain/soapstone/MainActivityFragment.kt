@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -39,9 +40,9 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
             mMap = googleMap
             mMap?.setOnMarkerClickListener(instance)
             mMap?.setOnMapClickListener(instance)
-            val sydney = LatLng(-34.0, 151.0)
-            mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-            mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+            val defaultMapCenter = LatLng(40.045204, -96.803178)
+            //mMap?.moveCamera(CameraUpdateFactory.newLatLng(defaultMapCenter).)
+            mMap?.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(defaultMapCenter, 1f)))
         }
     }
     val writes = mutableListOf<Write>()
@@ -81,7 +82,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
                 mainAdapter.addWrite(write)
                 val marker = mMap?.addMarker(MarkerOptions().position(LatLng(write.lat, write.lon)).title(write.message))
                 writesHashMap[marker!!.id] = write
-                mMap?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(write.lat, write.lon)))
+                //mMap?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(write.lat, write.lon)))
             }
         }
 

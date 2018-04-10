@@ -14,22 +14,18 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.android.synthetic.main.fragment_message.*
 import android.support.v4.app.ActivityCompat
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
-import com.firebase.ui.auth.AuthUI.getApplicationContext
 import android.support.v4.content.ContextCompat
-import java.security.Permission
-import android.support.annotation.NonNull
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.OnMapReadyCallback
-//import jdk.nashorn.internal.runtime.ECMAException.getException
-//import android.support.test.orchestrator.junit.BundleJUnitUtils.getResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLngBounds
-//import org.junit.experimental.results.ResultMatchers.isSuccessful
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.OnCompleteListener
-
-
+import java.io.IOException
+import java.util.*
 
 
 class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, OnMapReadyCallback {
@@ -40,6 +36,8 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
     var mFusedLocationProviderClient : FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MessageActivity.instance)
     var mLastKnownLocation: Location? = null
     lateinit var mWriteMarker: Marker
+    val geocoder = Geocoder(MessageActivity.instance, Locale.getDefault())
+    var mAddress = ""
 
     companion object {
         var mLocationPermissionGranted: Boolean = false
@@ -71,7 +69,8 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
     fun makeMessage(){
         val write = Write(fragment_message_message.text.toString(),
                 lat = mWriteMarker.position.latitude,
-                lon = mWriteMarker.position.longitude)
+                lon = mWriteMarker.position.longitude,
+                address = "near $mAddress")
         fragment_message_message.text.clear()
         fragment_message_write.isEnabled = false
         fragment_message_write.text = "Writing.."
@@ -89,7 +88,8 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
     }
 
     override fun onMapClick(latLng: LatLng?) {
-
+        if(latLng != null)
+            putMarker(latLng)
     }
 
     private fun getLocationPermission() {
@@ -181,8 +181,10 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                                 val marker = mMap?.addMarker(MarkerOptions()
                                         .position(LatLng(mLastKnownLocation!!.getLatitude(),
                                                 mLastKnownLocation!!.getLongitude())))
-                                if(marker != null)
+                                if(marker != null) {
                                     mWriteMarker = marker
+                                    putMarker(mWriteMarker.position)
+                                }
                         }} else {
                             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
                             mMap?.getUiSettings()?.isMyLocationButtonEnabled = false
@@ -195,5 +197,38 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         }
 
     }
+
+    fun putMarker(latLng: LatLng){
+        mWriteMarker.position = latLng
+
+        var addresses = listOf<Address>()
+        try {
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+        }catch (e: IOException){
+
+        }
+
+
+        if(addresses.size > 0){
+            mAddress = ""
+            if(addresses[0].getAddressLine(0) != null) {
+                mAddress = addresses[0].getAddressLine(0)
+                if(addresses[0].getAddressLine(1) != null) {
+                    mAddress += addresses[0].getAddressLine(1)
+                }
+                fragment_message_address.text = mAddress
+                return
+            }
+            if(addresses[0].featureName != null){
+                mAddress = addresses[0].featureName
+                fragment_message_address.text = mAddress
+                return
+            }
+        }
+        mAddress = "unknown"
+        fragment_message_address.text = mAddress
+    }
+
+
 
 }
