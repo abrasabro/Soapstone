@@ -7,13 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.android.synthetic.main.fragment_message.*
 import android.support.v4.app.ActivityCompat
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
@@ -21,7 +19,7 @@ import android.support.v4.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.OnCompleteListener
 import java.io.IOException
@@ -73,13 +71,13 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                 address = "near $mAddress")
         fragment_message_message.text.clear()
         fragment_message_write.isEnabled = false
-        fragment_message_write.text = "Writing.."
+        //fragment_message_write.text = "Writing.."
         val firebaseDatabase = FirebaseDatabase.getInstance()
         val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")
         val message = messagesDatabaseReference.push()
         write.messageUID = message.key
         message.setValue(write)
-        fragment_message_write.text = "Written!"
+        //fragment_message_write.text = "Written!"
 
     }
 
@@ -153,6 +151,7 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         //mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
         getLocationPermission()
+        mMap?.uiSettings?.isMyLocationButtonEnabled = false
     }
 
     private fun getDeviceLocation() {
@@ -183,6 +182,10 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                                                 mLastKnownLocation!!.getLongitude())))
                                 if(marker != null) {
                                     mWriteMarker = marker
+                                    var bitmapFactoryOptions = BitmapFactory.Options()
+                                    bitmapFactoryOptions.inSampleSize = 6
+                                    val mapPin = BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, R.drawable.pin, bitmapFactoryOptions))
+                                    mWriteMarker.setIcon(mapPin)
                                     putMarker(mWriteMarker.position)
                                 }
                         }} else {

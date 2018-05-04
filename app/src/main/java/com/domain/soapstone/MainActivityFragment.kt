@@ -3,6 +3,8 @@ package com.domain.soapstone
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
@@ -12,10 +14,7 @@ import android.view.ViewGroup
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.*
@@ -55,6 +54,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
     lateinit var currentUser: User
     lateinit var firebaseUser: FirebaseUser
     var selectedWrite: Write? = null
+    lateinit var mapPin: BitmapDescriptor
 
     val messagesEventListener: ChildEventListener = object : ChildEventListener{
         override fun onCancelled(p0: DatabaseError?) {
@@ -80,7 +80,10 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
             if(write != null) {
                 writes.add(write)
                 mainAdapter.addWrite(write)
-                val marker = mMap?.addMarker(MarkerOptions().position(LatLng(write.lat, write.lon)).title(write.message))
+                val marker = mMap?.addMarker(MarkerOptions()
+                        .position(LatLng(write.lat, write.lon))
+                        .title(write.message)
+                        .icon(mapPin))
                 writesHashMap[marker!!.id] = write
                 //mMap?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(write.lat, write.lon)))
             }
@@ -149,6 +152,9 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
         bottomdrawer_main_nav_signout.setOnClickListener {
             AuthUI.getInstance().signOut(context!!)
         }
+        var bitmapFactoryOptions = BitmapFactory.Options()
+        bitmapFactoryOptions.inSampleSize = 6
+        mapPin = BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, R.drawable.pin, bitmapFactoryOptions))
 
         mainAdapter.setWrites(writes)
         (fragment_main_recyclerview).apply {

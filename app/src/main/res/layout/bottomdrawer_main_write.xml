@@ -5,7 +5,7 @@
     android:id="@+id/bottomdrawer_main_write_layout"
     android:layout_width="match_parent"
     android:layout_height="180dp"
-    android:background="@android:color/holo_blue_bright"
+    android:background="@color/cardview_light_background"
     android:visibility="gone">
 
     <TextView
@@ -15,6 +15,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:background="#09000000"
         android:text="Message"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -26,7 +27,15 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="+"
+        android:includeFontPadding="false"
+        android:minHeight="0dp"
+        android:minWidth="0dp"
+        android:paddingBottom="4dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingTop="6dp"
+        android:text="Good:"
+        android:textAllCaps="false"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottomdrawer_main_write_message" />
 
@@ -34,19 +43,27 @@
         android:id="@+id/bottomdrawer_main_write_ratepoor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
-        android:text="-"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:minHeight="0dp"
+        android:minWidth="0dp"
+        android:paddingBottom="4dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingTop="4dp"
+        android:text="Poor:"
+        android:textAllCaps="false"
+        app:layout_constraintStart_toEndOf="@+id/center"
         app:layout_constraintTop_toBottomOf="@+id/bottomdrawer_main_write_message" />
 
     <TextView
         android:id="@+id/bottomdrawer_main_write_good"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:text="good"
+        app:layout_constraintBottom_toBottomOf="@+id/bottomdrawer_main_write_rategood"
         app:layout_constraintStart_toEndOf="@+id/bottomdrawer_main_write_rategood"
         app:layout_constraintTop_toTopOf="@+id/bottomdrawer_main_write_rategood" />
 
@@ -54,29 +71,54 @@
         android:id="@+id/bottomdrawer_main_write_poor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:text="poor"
-        app:layout_constraintEnd_toStartOf="@+id/bottomdrawer_main_write_ratepoor"
+        app:layout_constraintBottom_toBottomOf="@+id/bottomdrawer_main_write_ratepoor"
+        app:layout_constraintStart_toEndOf="@+id/bottomdrawer_main_write_ratepoor"
         app:layout_constraintTop_toTopOf="@+id/bottomdrawer_main_write_ratepoor" />
 
     <TextView
         android:id="@+id/bottomdrawer_main_write_lonlat"
-        android:layout_width="352dp"
-        android:layout_height="20dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="0dp"
         android:text="lonlat"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottomdrawer_main_write_rategood" />
 
     <TextView
         android:id="@+id/bottomdrawer_main_write_address"
-        android:layout_width="356dp"
-        android:layout_height="19dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="0dp"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
         android:text="address"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottomdrawer_main_write_lonlat" />
+
+    <Button
+        android:id="@+id/center"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:visibility="invisible"
+        android:text="Button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </android.support.constraint.ConstraintLayout>
