@@ -1,5 +1,6 @@
 package com.domain.soapstone
 
+import android.content.DialogInterface
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,6 +17,8 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AlertDialog
+import android.util.Log
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.location.LocationServices
@@ -41,14 +44,14 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         var mLocationPermissionGranted: Boolean = false
         var mMap: GoogleMap? = null
         lateinit var instance: MessageActivityFragment
-        fun onMapReady(googleMap: GoogleMap) {
+        /*fun onMapReady(googleMap: GoogleMap) {
             mMap = googleMap
             mMap?.setOnMarkerClickListener(instance)
             mMap?.setOnMapClickListener(instance)
             val sydney = LatLng(-34.0, 151.0)
             mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
             //mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-        }
+        }*/
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -61,6 +64,7 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         fragment_message_write.setOnClickListener {
             makeMessage()
         }
+        fragment_message_write.isEnabled = false
         instance  = this
     }
 
@@ -69,16 +73,16 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                 lat = mWriteMarker.position.latitude,
                 lon = mWriteMarker.position.longitude,
                 address = "near $mAddress")
-        fragment_message_message.text.clear()
+        //fragment_message_message.text.clear()
         fragment_message_write.isEnabled = false
         //fragment_message_write.text = "Writing.."
         val firebaseDatabase = FirebaseDatabase.getInstance()
-        val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")
+        val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")//todo verify notnull
         val message = messagesDatabaseReference.push()
         write.messageUID = message.key
         message.setValue(write)
         //fragment_message_write.text = "Written!"
-
+        activity?.finish()
     }
 
     override fun onMarkerClick(marker: Marker?): Boolean {
@@ -96,11 +100,13 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
      * device. The result of the permission request is handled by a callback,
      * onRequestPermissionsResult.
      */
+        Log.d("getLocationPermission", "function start")
         if (ContextCompat.checkSelfPermission(context!!,
                         android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true
             updateLocationUI()
         } else {
+            Log.d("getLocationPermission", "do not have location permission")
             ActivityCompat.requestPermissions(activity!!,
                     arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
@@ -111,47 +117,52 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                                             permissions: Array<String>,
                                             grantResults: IntArray) {
         mLocationPermissionGranted = false
+        Log.d("onRequestPermissionsRes", "start")
         when (requestCode) {
             PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
+                Log.d("onRequestPermissionsRes", "PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION")
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d("onRequestPermissionsRes", "permission granted")
                     mLocationPermissionGranted = true
+                    updateLocationUI()
+                }else{
+                    Log.d("onRequestPermissionsRes", "call getLocationPermission")
+                    errorDialog("Soapstone needs location permissions to complete this action")
                 }
             }
         }
-        updateLocationUI()
     }
 
     fun updateLocationUI(){
         if (mMap == null) {
-            return;
+            return
         }
         try {
             if (mLocationPermissionGranted) {
                 mMap?.setMyLocationEnabled(true)
-                mMap?.getUiSettings()?.isMyLocationButtonEnabled = true
+                //mMap?.getUiSettings()?.isMyLocationButtonEnabled = true
                 getDeviceLocation()
             } else {
-                mMap?.setMyLocationEnabled(false)
-                mMap?.getUiSettings()?.isMyLocationButtonEnabled = false
+                //mMap?.setMyLocationEnabled(false)
+                //mMap?.getUiSettings()?.isMyLocationButtonEnabled = false
+                //getLocationPermission()
+                //lost permission after checking
                 getLocationPermission()
             }
-        } catch (e: SecurityException) {
-
+        } catch (e: SecurityException){
+            //lost permission after checking it
+            getLocationPermission()
         }
-
-
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap?.setOnMarkerClickListener(instance)
         mMap?.setOnMapClickListener(instance)
-        val sydney = LatLng(-34.0, 151.0)
-        mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        //mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-        getLocationPermission()
         mMap?.uiSettings?.isMyLocationButtonEnabled = false
+        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
+        getLocationPermission()
     }
 
     private fun getDeviceLocation() {
@@ -187,16 +198,27 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
                                     val mapPin = BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, R.drawable.pin, bitmapFactoryOptions))
                                     mWriteMarker.setIcon(mapPin)
                                     putMarker(mWriteMarker.position)
+                                    fragment_message_write.isEnabled = true
+                                } else {
+                                    Log.d("getDeviceLocation()", "couldn't add marker to map")
+                                    mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
+                                    errorDialog("Couldn't add marker to map")
                                 }
-                        }} else {
+                            }else {
+                                Log.d("getDeviceLocation()", "getLastLocation() was successful with no result")
+                                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
+                                errorDialog("getLastLocation() was successful with no result")
+                            }
+                        } else {
+                            Log.d("getDeviceLocation()", "getLastLocation() was unsuccessful")
                             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
-                            mMap?.getUiSettings()?.isMyLocationButtonEnabled = false
+                            errorDialog("getLastLocation() was unsuccessful")
                         }
                     }
                 })
             }
         } catch (e: SecurityException) {
-
+            //lost permission after checking
         }
 
     }
@@ -210,7 +232,6 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         }catch (e: IOException){
 
         }
-
 
         if(addresses.size > 0){
             mAddress = ""
@@ -230,6 +251,22 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         }
         mAddress = "unknown"
         fragment_message_address.text = mAddress
+    }
+
+    fun errorDialog(msg: String = "Error"){
+        Log.d("errorDialog", "$msg")
+        val builder = AlertDialog.Builder(MessageActivity.instance)
+        builder.setTitle("Error")
+        builder.setMessage(msg)
+        builder.setPositiveButton("Retry", DialogInterface.OnClickListener(
+                {dialog: DialogInterface?, which: Int ->
+                    activity?.recreate()}))
+        builder.setNegativeButton("Cancel", DialogInterface.OnClickListener(
+                {dialog: DialogInterface?, which: Int ->
+                    activity?.finish()}))
+        builder.setOnCancelListener({errorDialog(msg)})
+        //builder.setOnDismissListener({errorDialog(msg)})
+        builder.create().show()
     }
 
 

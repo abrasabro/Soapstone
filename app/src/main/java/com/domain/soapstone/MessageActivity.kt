@@ -34,4 +34,10 @@ class MessageActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         MainActivity.mMap = googleMap
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
+        MessageActivityFragment.instance.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 }

@@ -11,6 +11,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.domain.soapstone.R.id.*
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -146,6 +147,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         bottomdrawer_main_nav_new.setOnClickListener {
             startActivity(Intent(context, MessageActivity::class.java))
         }
