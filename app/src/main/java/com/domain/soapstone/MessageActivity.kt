@@ -23,8 +23,8 @@ class MessageActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         instance = this
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_message)
         val mapFragment = fragment_message_map as SupportMapFragment
         //mapFragment.getMapAsync({googleMap: GoogleMap -> MessageActivityFragment.onMapReady(googleMap)})

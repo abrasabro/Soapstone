@@ -1,6 +1,5 @@
 package com.domain.soapstone
 
-import android.content.DialogInterface
 import android.support.v4.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,34 +23,25 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.Task
-import com.google.android.gms.tasks.OnCompleteListener
 import java.io.IOException
 import java.util.*
 
 
 class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, OnMapReadyCallback {
 
-    val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
-    val DEFAULT_ZOOM = 20f
-    val mDefaultLocation = LatLng(0.0, 0.0)
-    var mFusedLocationProviderClient : FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MessageActivity.instance)
-    var mLastKnownLocation: Location? = null
-    lateinit var mWriteMarker: Marker
-    val geocoder = Geocoder(MessageActivity.instance, Locale.getDefault())
-    var mAddress = ""
+    private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
+    private val defaultZoom = 20f
+    private val mDefaultLocation = LatLng(0.0, 0.0)
+    private var mFusedLocationProviderClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MessageActivity.instance)
+    private var mLastKnownLocation: Location? = null
+    private lateinit var mWriteMarker: Marker
+    private val geocoder = Geocoder(MessageActivity.instance, Locale.getDefault())
+    private var mAddress = ""
+    private lateinit var mMap: GoogleMap
+    private var mLocationPermissionGranted: Boolean = false
 
     companion object {
-        var mLocationPermissionGranted: Boolean = false
-        var mMap: GoogleMap? = null
         lateinit var instance: MessageActivityFragment
-        /*fun onMapReady(googleMap: GoogleMap) {
-            mMap = googleMap
-            mMap?.setOnMarkerClickListener(instance)
-            mMap?.setOnMapClickListener(instance)
-            val sydney = LatLng(-34.0, 151.0)
-            mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-            //mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-        }*/
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -60,28 +50,25 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        instance = this
         super.onViewCreated(view, savedInstanceState)
         fragment_message_write.setOnClickListener {
             makeMessage()
         }
         fragment_message_write.isEnabled = false
-        instance  = this
     }
 
-    fun makeMessage(){
+    private fun makeMessage() {
         val write = Write(fragment_message_message.text.toString(),
                 lat = mWriteMarker.position.latitude,
                 lon = mWriteMarker.position.longitude,
                 address = "near $mAddress")
-        //fragment_message_message.text.clear()
         fragment_message_write.isEnabled = false
-        //fragment_message_write.text = "Writing.."
         val firebaseDatabase = FirebaseDatabase.getInstance()
-        val messagesDatabaseReference = firebaseDatabase.getReference().child("messages")//todo verify notnull
+        val messagesDatabaseReference = firebaseDatabase.reference.child("messages")
         val message = messagesDatabaseReference.push()
         write.messageUID = message.key
         message.setValue(write)
-        //fragment_message_write.text = "Written!"
         activity?.finish()
     }
 
@@ -90,16 +77,11 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
     }
 
     override fun onMapClick(latLng: LatLng?) {
-        if(latLng != null)
+        if (latLng != null)
             putMarker(latLng)
     }
 
     private fun getLocationPermission() {
-        /*
-     * Request location permission, so that we can get the location of the
-     * device. The result of the permission request is handled by a callback,
-     * onRequestPermissionsResult.
-     */
         Log.d("getLocationPermission", "function start")
         if (ContextCompat.checkSelfPermission(context!!,
                         android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -122,11 +104,11 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
             PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
                 Log.d("onRequestPermissionsRes", "PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION")
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d("onRequestPermissionsRes", "permission granted")
                     mLocationPermissionGranted = true
                     updateLocationUI()
-                }else{
+                } else {
                     Log.d("onRequestPermissionsRes", "call getLocationPermission")
                     errorDialog("Soapstone needs location permissions to complete this action")
                 }
@@ -134,116 +116,104 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         }
     }
 
-    fun updateLocationUI(){
-        if (mMap == null) {
-            return
-        }
+    private fun updateLocationUI() {
         try {
             if (mLocationPermissionGranted) {
-                mMap?.setMyLocationEnabled(true)
-                //mMap?.getUiSettings()?.isMyLocationButtonEnabled = true
+                mMap.isMyLocationEnabled = true
                 getDeviceLocation()
             } else {
-                //mMap?.setMyLocationEnabled(false)
-                //mMap?.getUiSettings()?.isMyLocationButtonEnabled = false
-                //getLocationPermission()
-                //lost permission after checking
-                getLocationPermission()
+                Log.d("updateLocationUI", "lost permission after checking")
+                errorDialog("Unexpected loss of permissions")
             }
-        } catch (e: SecurityException){
-            //lost permission after checking it
-            getLocationPermission()
+        } catch (e: SecurityException) {
+            Log.d("updateLocationUI", "lost permission after checking")
+            errorDialog("Unexpected loss of permissions")
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap?.setOnMarkerClickListener(instance)
-        mMap?.setOnMapClickListener(instance)
-        mMap?.uiSettings?.isMyLocationButtonEnabled = false
-        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
+        mMap.setOnMarkerClickListener(instance)
+        mMap.setOnMapClickListener(instance)
+        mMap.uiSettings.isMyLocationButtonEnabled = false
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, defaultZoom))
         getLocationPermission()
     }
 
     private fun getDeviceLocation() {
-        /*
-     * Get the best and most recent location of the device, which may be null in rare
-     * cases when a location is not available.
-     */
         try {
             if (mLocationPermissionGranted) {
-                val locationResult = mFusedLocationProviderClient.getLastLocation()
-                locationResult.addOnCompleteListener(activity!!, object : OnCompleteListener<Location> {
-                    override fun onComplete(task: Task<Location>) {
-                        if (task.isSuccessful) {
-                            // Set the map's camera position to the current location of the device.
-                            mLastKnownLocation = task.result
-                            if(mLastKnownLocation != null){
-                                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                                        LatLng(mLastKnownLocation!!.getLatitude(),
-                                                mLastKnownLocation!!.getLongitude()), DEFAULT_ZOOM))
-                                mMap?.setLatLngBoundsForCameraTarget(LatLngBounds(LatLng(mLastKnownLocation!!.getLatitude(),
-                                        mLastKnownLocation!!.getLongitude()),
-                                        LatLng(mLastKnownLocation!!.getLatitude(),
-                                                mLastKnownLocation!!.getLongitude())))
-                                mMap?.uiSettings?.isZoomControlsEnabled = false
-                                mMap?.uiSettings?.isZoomGesturesEnabled = false
-                                val marker = mMap?.addMarker(MarkerOptions()
-                                        .position(LatLng(mLastKnownLocation!!.getLatitude(),
-                                                mLastKnownLocation!!.getLongitude())))
-                                if(marker != null) {
-                                    mWriteMarker = marker
-                                    var bitmapFactoryOptions = BitmapFactory.Options()
-                                    bitmapFactoryOptions.inSampleSize = 6
-                                    val mapPin = BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, R.drawable.pin, bitmapFactoryOptions))
-                                    mWriteMarker.setIcon(mapPin)
-                                    putMarker(mWriteMarker.position)
-                                    fragment_message_write.isEnabled = true
-                                } else {
-                                    Log.d("getDeviceLocation()", "couldn't add marker to map")
-                                    mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
-                                    errorDialog("Couldn't add marker to map")
-                                }
-                            }else {
-                                Log.d("getDeviceLocation()", "getLastLocation() was successful with no result")
-                                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
-                                errorDialog("getLastLocation() was successful with no result")
+                val locationResult = mFusedLocationProviderClient.lastLocation
+                locationResult.addOnCompleteListener(activity!!, { task: Task<Location> ->
+                    if (task.isSuccessful) {
+                        // Set the map's camera position to the current location of the device.
+                        mLastKnownLocation = task.result
+                        if (task.result != null) {
+                            val location: Location = task.result
+                            val locLatLng = LatLng(location.latitude, location.longitude)
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                    locLatLng, defaultZoom))
+                            mMap.setLatLngBoundsForCameraTarget(LatLngBounds(locLatLng,
+                                    locLatLng))
+                            mMap.uiSettings.isZoomControlsEnabled = false
+                            mMap.uiSettings.isZoomGesturesEnabled = false
+                            val marker = mMap.addMarker(MarkerOptions()
+                                    .position(locLatLng))
+                            if (marker != null) {
+                                mWriteMarker = marker
+                                val bitmapFactoryOptions = BitmapFactory.Options()
+                                bitmapFactoryOptions.inSampleSize = 6
+                                val mapPin = BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, R.drawable.pin, bitmapFactoryOptions))
+                                mWriteMarker.setIcon(mapPin)
+                                putMarker(mWriteMarker.position)
+                                fragment_message_write.isEnabled = true
+                            } else {
+                                Log.d("getDeviceLocation()", "couldn't add marker to map")
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, defaultZoom))
+                                errorDialog("Couldn't add marker to map")
                             }
                         } else {
-                            Log.d("getDeviceLocation()", "getLastLocation() was unsuccessful")
-                            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM))
-                            errorDialog("getLastLocation() was unsuccessful")
+                            Log.d("getDeviceLocation()", "getLastLocation() was successful with no result")
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, defaultZoom))
+                            errorDialog("getLastLocation() was successful with no result")
                         }
+                    } else {
+                        Log.d("getDeviceLocation()", "getLastLocation() was unsuccessful")
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, defaultZoom))
+                        errorDialog("getLastLocation() was unsuccessful")
                     }
                 })
             }
         } catch (e: SecurityException) {
-            //lost permission after checking
+            Log.d("getDeviceLocation()", "lost permissions after checking")
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, defaultZoom))
+            errorDialog("unexpected loss of permissions")
         }
 
     }
 
-    fun putMarker(latLng: LatLng){
+    private fun putMarker(latLng: LatLng) {
         mWriteMarker.position = latLng
 
         var addresses = listOf<Address>()
         try {
             addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-        }catch (e: IOException){
-
+        } catch (e: IOException) {
+            Log.d("putMarker", "geocoder network or I/O exception")
+            errorDialog("geocoder could not access the network")
         }
 
-        if(addresses.size > 0){
+        if (addresses.isNotEmpty()) {
             mAddress = ""
-            if(addresses[0].getAddressLine(0) != null) {
+            if (addresses[0].getAddressLine(0) != null) {
                 mAddress = addresses[0].getAddressLine(0)
-                if(addresses[0].getAddressLine(1) != null) {
+                if (addresses[0].getAddressLine(1) != null) {
                     mAddress += addresses[0].getAddressLine(1)
                 }
                 fragment_message_address.text = mAddress
                 return
             }
-            if(addresses[0].featureName != null){
+            if (addresses[0].featureName != null) {
                 mAddress = addresses[0].featureName
                 fragment_message_address.text = mAddress
                 return
@@ -253,22 +223,20 @@ class MessageActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Goo
         fragment_message_address.text = mAddress
     }
 
-    fun errorDialog(msg: String = "Error"){
-        Log.d("errorDialog", "$msg")
+    private fun errorDialog(msg: String = "Error") {
+        Log.d("errorDialog", "dialog: $msg")
         val builder = AlertDialog.Builder(MessageActivity.instance)
         builder.setTitle("Error")
         builder.setMessage(msg)
-        builder.setPositiveButton("Retry", DialogInterface.OnClickListener(
-                {dialog: DialogInterface?, which: Int ->
-                    activity?.recreate()}))
-        builder.setNegativeButton("Cancel", DialogInterface.OnClickListener(
-                {dialog: DialogInterface?, which: Int ->
-                    activity?.finish()}))
-        builder.setOnCancelListener({errorDialog(msg)})
-        //builder.setOnDismissListener({errorDialog(msg)})
+        builder.setPositiveButton("Retry", { _, _: Int ->
+            activity?.recreate()
+        })
+        builder.setNegativeButton("Cancel", { _, _: Int ->
+            activity?.finish()
+        })
+        builder.setOnCancelListener({ errorDialog(msg) })
         builder.create().show()
     }
-
 
 
 }
