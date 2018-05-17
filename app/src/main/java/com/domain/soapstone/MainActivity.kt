@@ -17,30 +17,14 @@ import com.google.android.gms.maps.GoogleMap
 import kotlinx.android.synthetic.main.fragment_main.*
 
 
-class MainActivity : AppCompatActivity(), OnMapReadyCallback {
-
-    companion object {
-        var mMap: GoogleMap? = null
-    }
+class MainActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val mapFragment = fragment_main_map as SupportMapFragment
-        //val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync({googleMap: GoogleMap -> MainActivityFragment.onMapReady(googleMap)})
-        //mapFragment.getMapAsync(this)
-
-    }
-
-    override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
-
-        // Add a marker in Sydney, Australia, and move the camera.
-        val sydney = LatLng(-34.0, 151.0)
-        mMap?.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        mapFragment.getMapAsync({ googleMap: GoogleMap -> MainActivityFragment.onMapReady(googleMap) })
     }
 
 }
