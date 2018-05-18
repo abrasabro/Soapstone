@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.support.v4.app.Fragment
 import android.os.Bundle
+import android.support.v7.app.AlertDialog
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -24,15 +25,15 @@ import kotlinx.android.synthetic.main.bottomdrawer_main_write.*
 class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener {
 
     companion object {
-        var mMap: GoogleMap? = null
+        lateinit var mMap: GoogleMap
         const val RC_SIGN_IN = 1
         lateinit var instance: MainActivityFragment
         fun onMapReady(googleMap: GoogleMap) {
             mMap = googleMap
-            mMap?.setOnMarkerClickListener(instance)
-            mMap?.setOnMapClickListener(instance)
+            mMap.setOnMarkerClickListener(instance)
+            mMap.setOnMapClickListener(instance)
             val defaultMapCenter = LatLng(40.045204, -96.803178)
-            mMap?.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(defaultMapCenter, 1f)))
+            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(defaultMapCenter, 1f)))
         }
     }
 
@@ -46,50 +47,59 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
     var selectedWrite: Write? = null
     lateinit var mapPin: BitmapDescriptor
 
+    //manages the data for each Write in the database
     private val messagesEventListener: ChildEventListener = object : ChildEventListener {
-        override fun onCancelled(p0: DatabaseError?) {
-            return
-            //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        override fun onCancelled(error: DatabaseError?) {
+            Log.d("messagesEventListener", "onCancelled, ${error?.details}")
+            errorDialog("Error communicating with Firebase servers \n" + error?.details)
             //This method will be triggered in the event that this listener either failed at the server, or is removed as a result of the security and Firebase rules.
         }
 
-        override fun onChildMoved(p0: DataSnapshot?, p1: String?) {
+        override fun onChildMoved(dataSnapshot: DataSnapshot?, previousChildName: String?) {
             return
             //This method is triggered when a child location's priority changes. See setPriority(Object) and Ordered Data for more information on priorities and ordering data.
             //should never be called as all entries should be ordered by key and never change
         }
 
-        override fun onChildChanged(p0: DataSnapshot?, p1: String?) {
-            val write = p0?.getValue(Write::class.java)
+        //called on ratings change
+        override fun onChildChanged(dataSnapshot: DataSnapshot?, previousChildName: String?) {
+            val write = dataSnapshot?.getValue(Write::class.java)
             if (write != null) {
                 if (write.messageUID == selectedWrite?.messageUID) {
                     showWrite(write)
                 }
+                writesHashMap.forEach { key: String, value: Write ->
+                    if (value.messageUID == write.messageUID) {
+                        writesHashMap[key] = write
+                    }
+                }
             }
         }
 
-        override fun onChildAdded(p0: DataSnapshot?, p1: String?) {
-            val write = p0?.getValue(Write::class.java)
+        //called for every message at the start and for any new messages added
+        override fun onChildAdded(dataSnapshot: DataSnapshot?, previousChildName: String?) {
+            val write = dataSnapshot?.getValue(Write::class.java)
             if (write != null) {
-                val marker = mMap?.addMarker(MarkerOptions()
+                val marker = mMap.addMarker(MarkerOptions()
                         .position(LatLng(write.lat, write.lon))
                         .title(write.message)
                         .icon(mapPin))
-                writesHashMap[marker!!.id] = write
+                writesHashMap[marker.id] = write
             }
         }
 
-        override fun onChildRemoved(p0: DataSnapshot?) {
+        override fun onChildRemoved(dataSnapshot: DataSnapshot?) {
             return
             //only called when a message is removed while the app is running
         }
 
     }
 
-    private val usersEventListener: ValueEventListener = object : ValueEventListener {
+    //manages user UID and ratings
+    private val userEventListener: ValueEventListener = object : ValueEventListener {
         override fun onCancelled(error: DatabaseError?) {
-            Log.d("usersEventListener", "onCancelled: ${error?.message}")
-            TODO(" this listener either failed at the server, or is removed as a result of the security and Firebase Database rules. ")
+            Log.d("userEventListener", "onCancelled, ${error?.details}")
+            errorDialog("Error communicating with Firebase servers \n" + error?.details)
         }
 
         //called immediately with the contents of the current user and every time the user's data changes (after rating)
@@ -113,8 +123,9 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
 
     }
 
-    private val authStateListener = { p0: FirebaseAuth ->
-        val user = p0.currentUser
+    //called when the user signs in or out
+    private val authStateListener = { auth: FirebaseAuth ->
+        val user = auth.currentUser
         if (user != null) {
             onSignedInInitialize(user)
         } else {
@@ -157,7 +168,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
             if (resultCode == RESULT_OK) {
                 //signed in
             } else if (resultCode == RESULT_CANCELED) {
-                activity!!.finish()
+                activity?.finish()
             }
         }
     }
@@ -176,13 +187,16 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
 
     private fun onSignedInInitialize(user: FirebaseUser) {
         firebaseUser = user
-        if (mMap != null) {
-            messagesDatabaseReference.addChildEventListener(messagesEventListener)
-        } else {
-            //todo problem setting up googlemap
+        //verify google map has been loaded asynchronously
+        try {
+            mMap.isMyLocationEnabled
+        } catch (e: UninitializedPropertyAccessException) {
+            Log.d("onSignedInInitialize", "googlemap not ready before firebase")
+            errorDialog("Error creating Google Map")
         }
+        messagesDatabaseReference.addChildEventListener(messagesEventListener)
         usersDatabaseReference = firebaseDatabase.reference.child("users").child(firebaseUser.uid)
-        usersDatabaseReference.addValueEventListener(usersEventListener)
+        usersDatabaseReference.addValueEventListener(userEventListener)
     }
 
     private fun onSignedOutCleanup() {
@@ -205,6 +219,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
                 messagesDatabaseReference.child(write.messageUID).child("ratingGood").setValue(write.ratingGood + 1)
                 currentUser.goodRatings.add(write.messageUID)
                 usersDatabaseReference.setValue(currentUser)
+                bottomdrawer_main_write_rategood.isEnabled = false
             }
         }
         if (currentUser.poorRatings.contains(write.messageUID)) {
@@ -215,6 +230,7 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
                 messagesDatabaseReference.child(write.messageUID).child("ratingPoor").setValue(write.ratingPoor + 1)
                 currentUser.poorRatings.add(write.messageUID)
                 usersDatabaseReference.setValue(currentUser)
+                bottomdrawer_main_write_ratepoor.isEnabled = false
             }
         }
     }
@@ -236,7 +252,22 @@ class MainActivityFragment : Fragment(), GoogleMap.OnMarkerClickListener, Google
         return false
     }
 
-    override fun onMapClick(p0: LatLng?) {
+    override fun onMapClick(latLng: LatLng?) {
         closeWrite()
+    }
+
+    private fun errorDialog(msg: String = "Error") {
+        Log.d("errorDialog", "dialog: $msg")
+        val builder = AlertDialog.Builder(MessageActivity.instance)
+        builder.setTitle("Error")
+        builder.setMessage(msg)
+        builder.setPositiveButton("Retry", { _, _: Int ->
+            activity?.recreate()
+        })
+        builder.setNegativeButton("Quit", { _, _: Int ->
+            activity?.finish()
+        })
+        builder.setOnCancelListener({ errorDialog(msg) })
+        builder.create().show()
     }
 }

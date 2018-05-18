@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -43,9 +41,9 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginStart="0dp"
-        android:text="TextView"
-        android:singleLine="true"
         android:ellipsize="marquee"
+        android:singleLine="true"
+        android:text="TextView"
         app:layout_constraintBottom_toTopOf="@+id/fragment_message_message"
         app:layout_constraintEnd_toEndOf="@+id/fragment_message_message"
         app:layout_constraintStart_toStartOf="@+id/fragment_message_message" />

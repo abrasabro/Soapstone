@@ -22,7 +22,6 @@
     -->
 
     <android.support.v7.widget.RecyclerView
-        android:visibility="invisible"
         android:id="@+id/fragment_main_recyclerview"
         android:layout_width="350dp"
         android:layout_height="217dp"
@@ -30,6 +29,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="124dp"
         android:background="@android:color/holo_red_light"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.425"
         app:layout_constraintStart_toStartOf="parent"

@@ -1,7 +1,7 @@
 package com.domain.soapstone
 
 
-data class Write (
+data class Write(
         var message: String = "",
         var lat: Double = 0.0,
         var lon: Double = 0.0,
