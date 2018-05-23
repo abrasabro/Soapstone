@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <EditText
         android:id="@+id/fragment_message_message"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:background="@android:color/darker_gray"
         android:ems="10"
         android:hint="Message"
-        android:inputType="textMultiLine"
+        android:inputType="text|textMultiLine|textNoSuggestions"
+        android:lines="3"
         android:maxLength="140"
-        android:maxLines="4"
+        android:maxLines="3"
         android:scrollHorizontally="false"
+        android:textSize="14sp"
+        android:overScrollMode="never"
+        android:scrollY="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/fragment_message_write"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <ImageButton
@@ -31,7 +36,7 @@
         android:background="#11000000"
         android:padding="4dp"
         android:scaleType="fitCenter"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/fragment_message_address"
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@drawable/makenew" />
 
@@ -40,11 +45,11 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:layout_marginStart="0dp"
+        android:layout_marginEnd="8dp"
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="TextView"
         app:layout_constraintBottom_toTopOf="@+id/fragment_message_message"
-        app:layout_constraintEnd_toEndOf="@+id/fragment_message_message"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/fragment_message_message" />
 </android.support.constraint.ConstraintLayout>

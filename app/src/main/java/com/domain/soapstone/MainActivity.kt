@@ -2,6 +2,8 @@ package com.domain.soapstone
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.text.NoCopySpan
+import android.text.TextWatcher
 import kotlinx.android.synthetic.main.activity_main.*
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.GoogleMap
